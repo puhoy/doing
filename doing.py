@@ -100,7 +100,7 @@ def print_today():
     if not j:
         print('nothing done today.')
         exit(0)
-    boot_time = datetime.now() - timedelta(seconds=j[0]['uptime'])
+    boot_time = datetime.fromtimestamp( j[-1]['time']) - timedelta(seconds=j[-1]['uptime'])
     print(colorize('bold', '[boot] %s\n' % boot_time.strftime('%H:%M:%S')))
 
     for point in j:
