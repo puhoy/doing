@@ -19,6 +19,7 @@ def check_if_git():
     import shutil
     return shutil.which('git')
 
+
 def get_uptime():
     with open('/proc/uptime', 'r') as f:
         uptime_seconds = float(f.readline().split()[0])
@@ -57,15 +58,14 @@ def get_todays_path():
     return os.path.join(store_path, this_month, '%s_%s.json' % (day, hostname))
 
 
-def load_todays_python():
-    json_path = get_todays_path()
+def load_day(path):
+    json_path = path
     try:
         with open(json_path, 'r') as f:
             j = json.load(f)
     except IOError as e:
         j = []
     except ValueError as e:
-        # print('a new day..!')
         j = []
     return j
 
@@ -84,7 +84,7 @@ def get_hashtags(task):
 
 
 def add_task(task):
-    j = load_todays_python()
+    j = load_day(get_todays_path())
     tags = get_hashtags(task)
     now = time.time()
     uptime = get_uptime()
@@ -104,7 +104,6 @@ def add_task(task):
         subprocess.call(['git', 'commit', '-m', '"%s - %s"' % ('autocommit', task)], cwd=store_path)
 
 
-
 def print_datapoint(point):
     print(colorize('bold', datetime.fromtimestamp(point['time']).strftime('%H:%M:%S')))
     print('  ' + point['task'])
@@ -112,17 +111,42 @@ def print_datapoint(point):
 
 
 def print_today():
-    j = load_todays_python()
+    j = load_day(get_todays_path())
     if not j:
         print('nothing done today.')
         exit(0)
-    boot_time = datetime.fromtimestamp( j[-1]['time']) - timedelta(seconds=j[-1]['uptime'])
+    boot_time = datetime.fromtimestamp(j[-1]['time']) - timedelta(seconds=j[-1]['uptime'])
     print(colorize('bold', '[boot] %s\n' % boot_time.strftime('%H:%M:%S')))
 
     for point in j:
         print_datapoint(point)
 
     print(colorize('bold', '\nup for %s now.' % humanize_uptime(get_uptime())))
+
+
+
+def print_days(number):
+    import fnmatch
+    for i in reversed(range(0, number)):
+        d = datetime.now() - timedelta(days=i)
+        print(colorize('bold', colorize('underline', '%s' % (d.strftime('%Y-%m-%d (%A)')))))
+        year_month = d.strftime('%Y%m')
+        day = d.strftime('%d')
+        this_path = os.path.join(store_path, year_month)
+        found_day = False
+        for f in os.listdir(this_path):
+            if fnmatch.fnmatch(f, '%s_*.json' % day):
+                found_day = True
+                #print(os.path.join(this_path, f))
+                hostname = f.split('_')[1].split('.')[0]
+
+                print('on %s:' % hostname)
+                for point in load_day(os.path.join(this_path, f)):
+                    print_datapoint(point)
+        if not found_day:
+            print('(nothing)\n')
+
+
 
 
 def init():
@@ -133,13 +157,15 @@ def init():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(usage="track what youre doing. tag with + or #")
+    parser = argparse.ArgumentParser(description="track what youre doing. tag with + or #")
     parser.add_argument("task",
                         help="what i am doing", nargs='*')
-    parser.add_argument("-i", "--install",
-                        help="", action="store_true")
-    parser.add_argument("-g", "--git",
+    parser.add_argument("--install",
+                        help="show how you could link this thing to your shell", action="store_true")
+    parser.add_argument("--git",
                         help="calls git with the arguments you give (runs in ~/.doing)", nargs='+')
+    parser.add_argument("--days",
+                        help="prints a number of days or this 'month'.")
 
     args = parser.parse_args()
 
@@ -153,10 +179,21 @@ if __name__ == "__main__":
             print('funcsave doing')
             exit(0)
 
-
     if not os.path.isdir(store_path):
         print("initializing new store in %s" % store_path)
         init()
+
+    if args.days:
+        if args.days == 'month':
+            print_days(datetime.now().day)
+        else:
+            try:
+                days = int(args.days)
+                print_days(days)
+            except ValueError:
+                print("unknown argument %s. --days takes 'month' or a number of days. " % args.days)
+        exit(0)
+
 
     if args.git:
         git_path = check_if_git()
@@ -168,7 +205,6 @@ if __name__ == "__main__":
             git_args += arg.split()
         subprocess.call(['git'] + git_args, cwd=store_path)
         exit(0)
-
 
     if args.task:
         add_task(' '.join(args.task))
