@@ -6,11 +6,18 @@ from datetime import date, datetime
 import time
 from datetime import timedelta
 from os.path import expanduser
+import socket
+import subprocess
 
 logging.basicConfig(level=logging.DEBUG)
 
 store_path = expanduser("~/.doing")
+hostname = socket.gethostname()
 
+
+def check_if_git():
+    import shutil
+    return shutil.which('git')
 
 def get_uptime():
     with open('/proc/uptime', 'r') as f:
@@ -47,7 +54,7 @@ def get_todays_path():
     day = date.today().strftime('%d')
     if not os.path.isdir(os.path.join(store_path, this_month)):
         os.makedirs(os.path.join(store_path, this_month))
-    return os.path.join(store_path, this_month, '%s.json' % day)
+    return os.path.join(store_path, this_month, '%s_%s.json' % (day, hostname))
 
 
 def load_todays_python():
@@ -88,6 +95,15 @@ def add_task(task):
     with open(get_todays_path(), 'w+') as f:
         json.dump(j, f, indent=2)
 
+    if os.path.isdir(os.path.join(store_path, '.git')):
+        git_path = check_if_git()
+        if not git_path:
+            print('looks like .doing is on git, but i cant find git on your system.')
+            exit(0)
+        subprocess.call(['git', 'add', '-A'], cwd=store_path)
+        subprocess.call(['git', 'commit', '-m', '"%s - %s"' % ('autocommit', task)], cwd=store_path)
+
+
 
 def print_datapoint(point):
     print(colorize('bold', datetime.fromtimestamp(point['time']).strftime('%H:%M:%S')))
@@ -122,6 +138,8 @@ if __name__ == "__main__":
                         help="what i am doing", nargs='*')
     parser.add_argument("-i", "--install",
                         help="", action="store_true")
+    parser.add_argument("-g", "--git",
+                        help="calls git with the arguments you give (runs in ~/.doing)", nargs='+')
 
     args = parser.parse_args()
 
@@ -139,6 +157,18 @@ if __name__ == "__main__":
     if not os.path.isdir(store_path):
         print("initializing new store in %s" % store_path)
         init()
+
+    if args.git:
+        git_path = check_if_git()
+        if not git_path:
+            print('git not found!')
+            exit(0)
+        git_args = []
+        for arg in args.git:
+            git_args += arg.split()
+        subprocess.call(['git'] + git_args, cwd=store_path)
+        exit(0)
+
 
     if args.task:
         add_task(' '.join(args.task))
