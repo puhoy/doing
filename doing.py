@@ -4,21 +4,11 @@ import humanize
 import datetime
 from doing.helpers import colorize, get_uptime
 from doing import time_format, date_format, hostname
+from doing.git import git
 
 logging.basicConfig(level=logging.ERROR)
 
-
-def init():
-    pass
-
-
-def git(args):
-    from doing.git import git, check_if_git
-
-    git_path = check_if_git()
-    if not git_path:
-        logging.error('git not found!')
-        exit(0)
+def cmd_git(args):
 
     git_args = []
     for arg in args:
@@ -90,7 +80,7 @@ def print_days(days, tags):
         print_day(day, tags)
 
 
-def finish(args):
+def cmd_finish(args):
     from doing.models import Day
     from doing import time_format, hostname
     import datetime
@@ -139,10 +129,16 @@ def finish(args):
 
 def add_task(task):
     from doing.models import Day
+    from doing.git import folder_is_git_tracked
     day = Day('today', hostname=hostname)
     day.add_task(task)
     print('added')
     print_datapoint(day.datapoints[hostname][-1])
+
+    if folder_is_git_tracked():
+        git(['add', '-A'])
+        git(['commit', '-m', '"%s - %s"' % ('autocommit', task)])
+
     pass
 
 
@@ -166,10 +162,10 @@ if __name__ == "__main__":
         print_days(args.days, args.tags)
 
     elif args.git:
-        git(args.git)
+        cmd_git(args.git)
 
     elif args.finish:
-        finish(args.finish)
+        cmd_finish(args.finish)
 
     elif args.task:
         add_task(' '.join(args.task))
