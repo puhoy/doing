@@ -20,7 +20,7 @@ def check_if_git():
 
 def git(args):
     import os
-    if folder_is_git_tracked()
+    if folder_is_git_tracked():
         git_path = check_if_git()
         if not git_path:
             print('cant find git on your system')
