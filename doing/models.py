@@ -37,8 +37,6 @@ def get_hashtags(task):
     return tags
 
 
-
-
 class Day:
     def __init__(self, day, hostname=''):
         """
@@ -133,7 +131,10 @@ class Datapoint():
         return '<%s>' % str(self.__dict__)
 
     def finish(self, timestamp=datetime.datetime.now().timestamp()):
-        self.finished = timestamp
+        self.finished = {
+            'time': timestamp,
+            'host': this_hostname
+        }
         self.update(timestamp)
 
     def update(self, timestamp=datetime.datetime.now().timestamp()):

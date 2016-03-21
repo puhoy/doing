@@ -8,8 +8,8 @@ from doing.git import git
 
 logging.basicConfig(level=logging.ERROR)
 
-def cmd_git(args):
 
+def cmd_git(args):
     git_args = []
     for arg in args:
         git_args += arg.split()
@@ -36,12 +36,13 @@ def print_day(day, tags):
 
     for host in day.datapoints.keys():
         print('on %s' % host)
-        boot_time = datetime.datetime.fromtimestamp(day.datapoints[host][0].time) - datetime.timedelta(seconds=day.datapoints[host][0].uptime)
+        boot_time = datetime.datetime.fromtimestamp(day.datapoints[host][0].time) - datetime.timedelta(
+            seconds=day.datapoints[host][0].uptime)
         print(colorize('bold', '[boot] %s\n' % boot_time.strftime(time_format)))
         for point in day.datapoints[host]:
             if tags:
                 tag_found = False
-                #print(point.__dict__.keys())
+                # print(point.__dict__.keys())
                 for tag in point.__dict__.get('tags', []):
                     print(tag)
                     if tag in tags:
@@ -86,14 +87,17 @@ def cmd_finish(args):
     import datetime
 
     if args == 'last':
-        d = Day('today', hostname)
+        # todo should finish the last task(s) of all hosts, not only this host
+
+        d = Day('today')
         try:
             if d.datapoints[hostname]:
                 last_point = d.datapoints[hostname][-1]
                 if last_point.__dict__.get('finished', False):
                     print(
                         'task "%s" \nalready finished (@%s)' % (
-                        last_point.task, datetime.datetime.fromtimestamp(last_point.finished).strftime(time_format)))
+                            last_point.task,
+                            datetime.datetime.fromtimestamp(last_point.finished).strftime(time_format)))
                     return
                 last_point.finish()
                 d.write()
@@ -108,11 +112,15 @@ def cmd_finish(args):
                 print('sorry, no last task to finish for today.')
         except Exception as e:
             logging.error('could not finish last task.', e)
-        exit(0)
 
     elif args == 'all':
+        # finishes todays task
+        d = Day('today')
+        for host in d.datapoints:
+            for task in host:
+                task.finish()
         print('TODO all')
-        exit(0)
+
     else:
         try:
             # check if its our time format (means search in today)
@@ -125,6 +133,8 @@ def cmd_finish(args):
                 stamp = datetime.strptime(args.finish, date_format).timestamp()
             except ValueError:
                 stamp = None
+
+                # todo git commit
 
 
 def add_task(task):
