@@ -93,10 +93,10 @@ class Day:
                         self.datapoints[hostname] = []
                     self.datapoints[hostname].append(Datapoint(dp_dict=point))
 
-    def add_task(self, task):
-        if not self.hostname:
-            logging.error('no hostname given! (this shouldnt happen..)')
-        self.datapoints[self.hostname].append(Datapoint(task=task))
+    def add_task(self, task, hostname=this_hostname):
+        if not self.datapoints.get(hostname, False):
+            self.datapoints[hostname] = []
+        self.datapoints[hostname].append(Datapoint(task=task))
         self.write()
 
     def get_datapoint_by_timestamp(self, timestamp):
@@ -108,15 +108,14 @@ class Day:
     def get_datapoint_by_date(self, date_str):
         pass
 
-    def write(self):
-        if not self.hostname:
-            logging.error('no hostname given! (this shouldnt happen..)')
-        else:
-            points_to_write = []
-            for point in self.datapoints[self.hostname]:
-                points_to_write.append(point.__dict__)
-            with open(self.path_wildcard, 'w+') as f:
-                json.dump(points_to_write, f, indent=2)
+    def write(self, hostname=this_hostname):
+        points_to_write = []
+        if not self.datapoints.get(hostname, False):
+            self.datapoints[hostname] = []
+        for point in self.datapoints[hostname]:
+            points_to_write.append(point.__dict__)
+        with open(self.path_wildcard, 'w+') as f:
+            json.dump(points_to_write, f, indent=2)
 
 
 class Datapoint():
