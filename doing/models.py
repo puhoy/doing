@@ -5,8 +5,8 @@ import json
 import fnmatch
 import logging
 import time
-
-from . import store_path, hostname as this_hostname
+from dateutil import parser
+from . import store_path, hostname as this_hostname, message_folder
 
 
 def load_or_create_dict(path):
@@ -80,16 +80,19 @@ class Day:
 
         self.datapoints = {}
         logging.debug('loading from %s' % self.path_for_this_host)
-        for f in os.listdir(self.path_for_this_days_folder):
-            if fnmatch.fnmatch(
-                    os.path.join(self.path_for_this_days_folder, f),
-                    self.path_wildcard):
-                hostname = f.split('_')[1].split('.')[0]
-                points = load_or_create_dict(os.path.join(self.path_for_this_days_folder, f))
-                for point in points:
-                    if not self.datapoints.get(hostname, False):
-                        self.datapoints[hostname] = []
-                    self.datapoints[hostname].append(Datapoint(dp_dict=point))
+        if os.path.isdir(self.path_for_this_days_folder):
+            for f in os.listdir(self.path_for_this_days_folder):
+                if fnmatch.fnmatch(
+                        os.path.join(self.path_for_this_days_folder, f),
+                        self.path_wildcard):
+                    hostname = f.split('_')[1].split('.')[0]
+                    points = load_or_create_dict(os.path.join(self.path_for_this_days_folder, f))
+                    for point in points:
+                        if not self.datapoints.get(hostname, False):
+                            self.datapoints[hostname] = []
+                        self.datapoints[hostname].append(Datapoint(dp_dict=point))
+            logging.debug('loaded regular datapoints')
+            self._process_messages()
 
     def add_task(self, task, hostname=this_hostname):
         if not self.datapoints.get(hostname, False):
@@ -97,14 +100,27 @@ class Day:
         self.datapoints[hostname].append(Datapoint(task=task))
         self.write()
 
-    def get_datapoint_by_timestamp(self, timestamp):
-        pass
+    def get_datapoint_by_timestamp(self, timestamp, hostname=None):
+        """
+        iterate over all datapoints until we found
 
-    def get_datapoint_by_time(self, time):
-        pass
+        :param timestamp:
+        :return: a dict with keys "hostname" and "datapoint"
+        """
+        hosts = []
+        if not hostname:
+            for host in self.datapoints:
+                hosts.append(host)
+        else:
+            hosts.append(hostname)
 
-    def get_datapoint_by_date(self, date_str):
-        pass
+        for host in hosts:
+            logging.debug('searching in points for %s' % hosts)
+            logging.debug(self.datapoints)
+            for point in self.datapoints[host]:
+                if int(timestamp) == int(point.time):
+                    return {'hostname': host,
+                            'datapoint': point }
 
     def write(self, hostname=this_hostname):
         points_to_write = []
@@ -112,8 +128,121 @@ class Day:
             self.datapoints[hostname] = []
         for point in self.datapoints[hostname]:
             points_to_write.append(point.__dict__)
-        with open(self.path_wildcard, 'w+') as f:
+        if not os.path.isdir(self.path_for_this_days_folder):
+            os.mkdir(self.path_for_this_days_folder)
+        with open(self.path_for_this_host, 'w+') as f:
             json.dump(points_to_write, f, indent=2)
+
+    def finish_all(self):
+        for host in self.datapoints:
+            for point in host:
+                if host == this_hostname:
+                    point.finish()
+                else:
+                    self.craft_finish_message(point)
+
+    def finish_task(self, timestamp, host=None):
+        d = self.get_datapoint_by_timestamp(timestamp)
+        if not d:
+            logging.debug('no point for timestamp found')
+            return False
+        hostname = d['hostname']
+        dp = d['datapoint']
+        if hostname == this_hostname:
+            logging.debug('yup, found. finishing.')
+            dp.finish()
+            self.write()
+        else:
+            logging.debug('found on another host, writing a message...')
+            self.craft_finish_message(dp, hostname)
+            pass
+
+    def _sort_by_time(self):
+        # todo
+        pass
+
+    def _process_messages(self):
+        logging.debug('processing messages')
+        for f in os.listdir(message_folder):
+            date_in_filename = f.split('_')[3].split(".json")[0]
+            logging.debug('date in filename %s' % date_in_filename)
+            if self.day.date() == parser.parse(date_in_filename).date():
+                # if the message is for us
+                if fnmatch.fnmatch(
+                        os.path.join(message_folder, f),
+                        os.path.join(message_folder, 'dear_%s_*.json' % this_hostname)):
+                    logging.debug('found a message for us: %s' % f)
+                    with open(os.path.join(message_folder, f)) as message_file:
+                        message = json.load(message_file)
+                    self._merge_message_to_datapoint(message)
+                    self.write()
+                    # todo: delete message file
+
+                elif fnmatch.fnmatch(
+                        os.path.join(message_folder, f),
+                        os.path.join(message_folder, 'dear_*_*.json')):
+
+                    logging.debug('found a message %s' % f)
+                    with open(os.path.join(message_folder, f)) as message_file:
+                        message = json.load(message_file)
+                    self._merge_message_to_datapoint(message)
+
+                self._sort_by_time()
+
+
+    def _merge_message_to_datapoint(self, message):
+        """
+        merge a (finish-) message in our tasks
+
+        :param message: message to merge
+        :param write: write new datapoints to disk
+        :param dest_host: host who gets the message
+        :return:
+        """
+        if message['subject'] == 'finished':
+            dest_hostname = message['to']
+            source_hostname = message['from']
+            timestamp = message['datapoint']['time']
+
+            found_dp = self.get_datapoint_by_timestamp(timestamp, hostname=dest_hostname)
+            if not found_dp:
+                logging.error('cant find destination task for %s' % message)
+            found_dp['datapoint'].finish(timestamp=message['time'], hostname=source_hostname)
+        else:
+            logging.info('got a strange message %s' % message)
+
+    def craft_finish_message(self, datapoint, destination_host):
+        """
+        used to finish tasks on other hosts
+        (basically leaves them a message)
+
+        :return:
+        """
+        message_path = os.path.join(
+                message_folder,
+                'dear_%s_0_%s.json' % (destination_host, datetime.datetime.fromtimestamp(datapoint.time).strftime('%Y%m%d-%H:%M:%S'))
+            )
+
+        # if the name is already given, iterate a bit
+        i = 0
+        while os.path.isfile(message_path):
+            i += 1
+            message_path = os.path.join(
+                message_folder,
+                'dear_%s_%s_%s.json' % (destination_host, i, datetime.datetime.fromtimestamp(datapoint.time).strftime('%Y%m%d-%H:%M:%S'))
+            )
+
+        message = {
+            'time': time.time(),
+            'from': this_hostname,
+            'to': destination_host,
+            'subject': 'finished',
+            'datapoint': datapoint.__dict__
+        }
+        with open(message_path, 'w+') as f:
+            json.dump(message, f, indent=2)
+        return True
+
 
 
 class Datapoint():
@@ -130,10 +259,19 @@ class Datapoint():
     def __repr__(self):
         return '<%s>' % str(self.__dict__)
 
-    def finish(self, timestamp=datetime.datetime.now().timestamp()):
+    def finish(self, timestamp=datetime.datetime.now().timestamp(), hostname=this_hostname):
+        """
+        call this ONLY if you are on the host that created this point,
+        or maybe possibly eventually you will run into git merges.
+        In that case you should use Day('').finish_task()
+
+        :param timestamp:
+        :param hostname: host on which this task was finished
+        :return:
+        """
         self.finished = {
             'time': timestamp,
-            'host': this_hostname
+            'host': hostname
         }
         self.update(timestamp)
 
