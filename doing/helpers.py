@@ -10,6 +10,8 @@ def process_messages():
     from .models import Day
     import json
     from dateutil import parser
+    import time
+    from datetime import datetime
     import fnmatch
 
     logging.debug('processing messages')
@@ -18,23 +20,30 @@ def process_messages():
         logging.debug('date in filename %s' % date_in_filename)
         # if day.date() == parser.parse(date_in_filename).date():
         # if the message is for us
-        found = False
+        found = None
+        error = False
         if fnmatch.fnmatch(
                 os.path.join(message_folder, f),
                 os.path.join(message_folder, 'dear_%s_*.json' % hostname)):
             logging.debug('found a message for us: %s' % f)
             with open(os.path.join(message_folder, f)) as message_file:
                 message = json.load(message_file)
-            day = Day(parser.parse(date_in_filename).date())
-            day.merge_message_to_datapoint(message)
-            day.write()
-            found = True
-            # todo: delete message file
+                d = datetime.combine(parser.parse(date_in_filename).date(), datetime.min.time())
+                day = Day(d)
+                if day.merge_message_to_datapoint(message):
+                    day.write()
+                    found = True
+                    os.remove(os.path.join(message_folder, f))
+                else:
+                    error = True
+        if error:
+            return False
         return found
 
 
 def touch():
-    return process_messages()
+    status = process_messages()
+    return status
 
 
 def get_last_days(number_of_days):

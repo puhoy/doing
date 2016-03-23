@@ -159,13 +159,17 @@ def cmd_finish(args):
 
 
 def cmd_touch():
-    if touch():
+    status = touch()
+
+    if status:
         print('merged messages')
         if folder_is_git_tracked():
             git(['add', '-A'])
             git(['commit', '-m', '"%s"' % ('autocommit')])
-    else:
+    elif status is None:
         print('nothing to touch')
+    else:
+        print('something went wrong while merging messages!')
     pass
 
 

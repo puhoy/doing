@@ -222,9 +222,13 @@ class Day:
             found_dp = self.get_datapoint_by_timestamp(timestamp, hostname=dest_hostname)
             if not found_dp:
                 logging.error('cant find destination task for %s' % message)
+                return False
             found_dp['datapoint'].finish(timestamp=message['time'], hostname=source_hostname)
+            return True
         else:
-            logging.info('got a strange message %s' % message)
+            logging.error('got a strange message %s' % message)
+            return False
+
 
     def craft_finish_message(self, datapoint, destination_host):
         """
