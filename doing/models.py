@@ -191,12 +191,15 @@ class Day:
         for f in os.listdir(message_folder):
             if fnmatch.fnmatch(
                 os.path.join(message_folder, f),
-                os.path.join(message_folder, 'dear_*_*.json')):
+                    os.path.join(message_folder, 'dear_*_*.json')):
+                date_in_filename = f.split('_')[3].split(".json")[0]
+                parser.parse(date_in_filename).date()
+                if self.day.date() == parser.parse(date_in_filename).date():
 
-                logging.debug('found a message %s' % f)
-                with open(os.path.join(message_folder, f)) as message_file:
-                    message = json.load(message_file)
-                self.merge_message_to_datapoint(message)
+                    logging.debug('found a message %s' % f)
+                    with open(os.path.join(message_folder, f)) as message_file:
+                        message = json.load(message_file)
+                    self.merge_message_to_datapoint(message)
 
     def _sort_by_time(self):
         # todo
