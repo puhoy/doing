@@ -5,6 +5,9 @@ from ..helpers import get_uptime, try_parse_time
 from ..cli.colorize import colorize
 from .. import time_format, date_format, hostname
 from ..git import git
+from doing.helpers import touch
+from doing.git import folder_is_git_tracked
+from .unicode_icons import icon
 
 
 def cmd_git(args):
@@ -21,9 +24,11 @@ def print_datapoint(point):
             colorize(['bold', 'okgreen'],
                      '  ' + datetime.datetime.fromtimestamp(point.time).strftime(time_format)))
 
-        print('  finished @%s on %s ' % (
-            datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
-            point.finished['host']))
+        print(colorize(['bold', 'okgreen'],
+                       '   %s %s on %s ' % (
+                           icon.check,
+                           datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
+                           point.finished['host'])))
 
     else:
         print(colorize('bold', '  ' + datetime.datetime.fromtimestamp(point.time).strftime(time_format)))
@@ -112,6 +117,12 @@ def cmd_finish(args):
     from doing import time_format, hostname
     import datetime
 
+    if touch():
+        print('merged messages')
+        if folder_is_git_tracked():
+            git(['add', '-A'])
+            git(['commit', '-m', '"%s"' % ('autocommit after touch')])
+
     if args == 'last':
         d = Day('today')
         try:
@@ -131,7 +142,11 @@ def cmd_finish(args):
 
     else:
         from dateutil import parser
-        parsed_date = parser.parse(args)
+        try:
+            parsed_date = parser.parse(args)
+        except ValueError:
+            print(colorize('warning', 'could not parse your date: %s' % args))
+            return
         d = Day(parsed_date)
         if d.datapoints == {}:
             print("you have got no tasks for %s" % parsed_date.date())
@@ -144,8 +159,6 @@ def cmd_finish(args):
 
 
 def cmd_touch():
-    from doing.git import folder_is_git_tracked
-    from doing.helpers import touch
     if touch():
         print('merged messages')
         if folder_is_git_tracked():
@@ -159,6 +172,13 @@ def cmd_touch():
 def add_task(task, finish=False):
     from doing.models import Day
     from doing.git import folder_is_git_tracked
+
+    if touch():
+        print('merged messages')
+        if folder_is_git_tracked():
+            git(['add', '-A'])
+            git(['commit', '-m', '"%s"' % ('autocommit after touch')])
+
     day = Day('today')
     day.add_task(task)
     print('added')
@@ -171,4 +191,3 @@ def add_task(task, finish=False):
         git(['add', '-A'])
         git(['commit', '-m', '"%s - %s"' % ('autocommit', task)])
 
-    pass

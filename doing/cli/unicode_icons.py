@@ -13,7 +13,6 @@ icons_as_dict = {
 
 support = False
 if 'utf-8' in locale.getdefaultlocale()[1].lower():
-    print('got support')
     support = True
 
 

@@ -79,6 +79,12 @@ class Day:
                 self.day.strftime('%d') + '_*.json')
 
         self.datapoints = {}
+        self._load_datapoints()
+        self.process_messages()
+
+
+    def _load_datapoints(self):
+        self.datapoints = {}
         logging.debug('loading from %s' % self.path_for_this_host)
         if os.path.isdir(self.path_for_this_days_folder):
             for f in os.listdir(self.path_for_this_days_folder):
@@ -247,6 +253,7 @@ class Day:
         }
         with open(message_path, 'w+') as f:
             json.dump(message, f, indent=2)
+        self.process_messages()
         return True
 
 
