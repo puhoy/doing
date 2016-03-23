@@ -11,6 +11,6 @@ date_format = '%Y-%m-%d'
 time_format = '%H:%M:%S'
 
 if not os.path.isdir(store_path):
-    from doing_pkg.helpers import init
+    from doing.helpers import init
     print("initializing new store in %s" % store_path)
     init()

@@ -15,7 +15,7 @@ setup(
 
     author='meatpuppet',
 
-    packages=['doing_pkg', 'doing_pkg.cli'],
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
 
@@ -28,11 +28,11 @@ setup(
 
 
     entry_points={
-        'console_scripts': ['doing=doing_pkg.__main__:main']
+        'console_scripts': ['doing=doing.__main__:main']
     },
 
     #description='Decentralised, minimalist microblogging service for hackers.',
-    #long_description=open('./README.rst', 'r', encoding='utf-8').read(),
+    #long_description=open('./README.md', 'r', encoding='utf-8').read(),
 
     keywords=[],
 

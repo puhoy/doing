@@ -4,8 +4,6 @@ from .cli import print_days, cmd_git, cmd_finish, add_task
 
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 def main(args=None):
     parser = argparse.ArgumentParser(description="track what youre doing. tag with + or #")
@@ -20,8 +18,15 @@ def main(args=None):
                         help="prints a number of days or this 'month'.")
     parser.add_argument("--tags",
                         help="restrict prints to tasks with tags", nargs='+')
+    parser.add_argument("--debug",
+                        help=argparse.SUPPRESS, action='store_true')
 
     args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.ERROR)
 
     if args.days:
         print_days(args.days, args.tags)

@@ -116,7 +116,7 @@ class Day:
 
         for host in hosts:
             logging.debug('searching in points for %s' % hosts)
-            logging.debug(self.datapoints)
+            #logging.debug(self.datapoints)
             for point in self.datapoints[host]:
                 if int(timestamp) == int(point.time):
                     return {'hostname': host,
@@ -142,12 +142,28 @@ class Day:
                     self.craft_finish_message(point)
 
     def finish_task(self, timestamp, host=None):
+        """
+
+
+        :param timestamp:
+        :param host:
+        :return:
+            False, if no point was found
+            True, if finished
+            returns timestamp-and-host dict, if task was finished before
+        """
         d = self.get_datapoint_by_timestamp(timestamp)
         if not d:
             logging.debug('no point for timestamp found')
-            return False
+            return {'status': 'not_found'}
+        logging.debug('found datapoint %s' % d)
         hostname = d['hostname']
         dp = d['datapoint']
+        if dp.__dict__.get('finished', False):
+            logging.debug('was finished before')
+            return {'status': 'finished_before',
+                    'datapoint': dp }
+
         if hostname == this_hostname:
             logging.debug('yup, found. finishing.')
             dp.finish()
@@ -156,6 +172,8 @@ class Day:
             logging.debug('found on another host, writing a message...')
             self.craft_finish_message(dp, hostname)
             pass
+        return {'status': 'ok',
+                'datapoint': dp }
 
     def _sort_by_time(self):
         # todo

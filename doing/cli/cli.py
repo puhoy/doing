@@ -81,11 +81,29 @@ def print_days(days, tags):
 
             pass  # print_days(days)
         except ValueError:
-            print("unknown argument %s. --days takes 'month' or a number of days. " % args.days)
+            print("unknown argument %s. --days takes 'month' or a number of days. " % days)
 
     for day in days_to_print:
         print_day(day, tags)
 
+
+def print_finish_message(fin_dict):
+    if fin_dict['status'] == 'not_found':
+        print('no task found!')
+        return
+    elif fin_dict['status'] == 'finished_before':
+        fin_time = datetime.datetime.fromtimestamp(fin_dict['datapoint'].finished['time'])
+        print_datapoint(fin_dict['datapoint'])
+        print(colorize(['bold', 'warning'], 'task was finished @%s on %s' % (fin_time.strftime(time_format), fin_dict['datapoint'].finished['host'])))
+        return
+    else:
+        fin_time = datetime.datetime.fromtimestamp(fin_dict['datapoint'].finished['time'])
+        start_time = datetime.datetime.fromtimestamp(fin_dict['datapoint']['time'])
+        print('task "%s" \nfinished @%s (took %s)' % (
+            fin_dict['datapoint']['task'],
+            fin_time.strftime(time_format),
+            humanize.naturaldelta(fin_time - start_time)
+        ))
 
 def cmd_finish(args):
     from doing.models import Day
@@ -97,21 +115,8 @@ def cmd_finish(args):
         try:
             if d.datapoints[hostname]:
                 last_point = d.datapoints[hostname][-1]
-                if not last_point.__dict__.get('finished', False):
-                    print(
-                        'task "%s" \nalready finished (@%s)' % (
-                            last_point.task,
-                            datetime.datetime.fromtimestamp(last_point.finished).strftime(time_format)))
-                    return
-                last_point.finish()
-                d.write()
-                fin_time = datetime.datetime.fromtimestamp(last_point.finished)
-                start_time = datetime.datetime.fromtimestamp(last_point.time)
-                print('task "%s" \nfinished @%s (took %s)' % (
-                    last_point.task,
-                    fin_time.strftime(time_format),
-                    humanize.naturaldelta(fin_time - start_time)
-                ))
+                fin = d.finish_task(last_point.time)
+                print_finish_message(fin)
             else:
                 print('sorry, no last task to finish for today.')
         except Exception as e:
@@ -126,15 +131,13 @@ def cmd_finish(args):
         from dateutil import parser
         parsed_date = parser.parse(args)
         d = Day(parsed_date)
-        print(parsed_date.timestamp())
-        print(d.datapoints)
         if d.datapoints == {}:
             print("you have got no tasks for %s" % parsed_date.date())
             return
         # print(d)
 
-        d.finish_task(parsed_date.timestamp())
-
+        fin = d.finish_task(parsed_date.timestamp())
+        print_finish_message(fin)
 
 
         # todo git commit
