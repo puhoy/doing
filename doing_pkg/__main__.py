@@ -1,13 +1,13 @@
 
 import argparse
-from doing.cli import print_days, cmd_git, cmd_finish, add_task
+from .cli import print_days, cmd_git, cmd_finish, add_task
 
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-if __name__ == "__main__":
+def main(args=None):
     parser = argparse.ArgumentParser(description="track what youre doing. tag with + or #")
     parser.add_argument("task",
                         help="what i am doing", nargs='*')
@@ -37,3 +37,6 @@ if __name__ == "__main__":
 
     else:
         print_days('today', args.tags)
+
+if __name__ == "__main__":
+    main()

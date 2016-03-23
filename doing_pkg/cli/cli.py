@@ -1,10 +1,10 @@
 import logging
 import humanize
 import datetime
-from doing.helpers import get_uptime, try_parse_time
-from doing.cli.colorize import colorize
-from doing import time_format, date_format, hostname
-from doing.git import git
+from ..helpers import get_uptime, try_parse_time
+from ..cli.colorize import colorize
+from .. import time_format, date_format, hostname
+from ..git import git
 
 
 def cmd_git(args):

@@ -5,7 +5,7 @@ def get_last_days(number_of_days):
     :param number_of_days:
     :return: returns an array of days
     """
-    from doing.models import Day
+    from .models import Day
     from datetime import datetime, timedelta
     days = []
     for i in reversed(range(0, number_of_days)):
