@@ -8,6 +8,7 @@ from ..git import git
 from doing.helpers import touch
 from doing.git import folder_is_git_tracked
 from .unicode_icons import icon
+from textwrap import indent, fill, wrap, TextWrapper
 
 
 def cmd_git(args):
@@ -18,60 +19,70 @@ def cmd_git(args):
     git(git_args)
 
 
-def print_datapoint(point):
+def print_datapoint(point, base_indent=' '):
+    textblock = []
+    this_indent = base_indent + '  '
     if point.__dict__.get('finished', False):
-        print(
+        iprint(
             colorize(['bold', 'okgreen'],
-                     '  ' + datetime.datetime.fromtimestamp(point.time).strftime(time_format)))
+                     datetime.datetime.fromtimestamp(point.time).strftime(time_format)), base_indent)
 
-        print(colorize(['bold', 'okgreen'],
-                       '   %s %s on %s ' % (
-                           icon.check,
-                           datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
-                           point.finished['host'])))
-
+        iprint(colorize(['bold', 'okgreen'],
+                        '%s %s on %s ' % (
+                            icon.check,
+                            datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
+                            point.finished['host'])), base_indent)
     else:
-        print(colorize('bold', '  ' + datetime.datetime.fromtimestamp(point.time).strftime(time_format)))
+        iprint(colorize('bold', datetime.datetime.fromtimestamp(point.time).strftime(time_format)), base_indent)
 
-    print('    ' + point.task)
-    print('    pc was up for %s\n' % humanize.naturaldelta(point.uptime))
-
-    # print(point.finished)
+    iprint(point.task, this_indent)
+    iprint('pc was up for %s\n' % humanize.naturaldelta(point.uptime), this_indent)
 
 
-def print_day(day, tags):
+def iprint(text, ind):
+    for line in text.split('\n'):
+        if line == '':
+            print('')
+        else:
+            for l in wrap(line, width=70):
+                print(indent(l, ind))
+
+
+def print_day(day, tags, base_indent=' '):
     # bold, underlined date
-    print(colorize('bold', colorize('underline', '%s' % (day.day.strftime(date_format + ' (%A)')))))
+    this_indent = base_indent + '  '
+
+    iprint(colorize('bold', colorize('underline', '%s' % (day.day.strftime(date_format + ' (%A)')))), base_indent)
     if not day.datapoints:
-        print('nothing done.\n')
+        iprint('nothing done.\n', this_indent)
 
     for host in day.datapoints.keys():
-        print('on %s' % host)
+        iprint('on %s' % host, base_indent)
         boot_time = datetime.datetime.fromtimestamp(day.datapoints[host][0].time) - datetime.timedelta(
             seconds=day.datapoints[host][0].uptime)
-        print(colorize('bold', '[boot] %s\n' % boot_time.strftime(time_format)))
+        iprint(colorize('bold', '[boot] %s\n' % boot_time.strftime(time_format)), base_indent)
         for point in day.datapoints[host]:
             if tags:
                 tag_found = False
                 # print(point.__dict__.keys())
                 for tag in point.__dict__.get('tags', []):
-                    print(tag)
+                    iprint(tag, this_indent)
                     if tag in tags:
                         tag_found = True
                 if tag_found:
-                    print_datapoint(point)
+                    print_datapoint(point, this_indent)
             else:
-                print_datapoint(point)
+                print_datapoint(point, this_indent)
         if day.day.date() == datetime.datetime.today().date():
-            print(colorize('bold', '\nup for %s now.' % humanize.naturaldelta(get_uptime())))
+            iprint(colorize('bold', '\nup for %s now.' % humanize.naturaldelta(get_uptime())), this_indent)
 
 
-def print_days(days, tags):
+def print_days(days, tags, base_indent=''):
     from doing.models import Day
     from doing.helpers import get_last_days
 
     if tags:
-        print('(only tasks with %s)' % tags)
+        iprint('(only tasks with %s)' % tags, base_indent)
 
     days_to_print = []
     if days.lower() in ['today', '']:
@@ -86,10 +97,10 @@ def print_days(days, tags):
 
             pass  # print_days(days)
         except ValueError:
-            print("unknown argument %s. --days takes 'month' or a number of days. " % days)
+            iprint("unknown argument %s. --days takes 'month' or a number of days. " % days, base_indent)
 
     for day in days_to_print:
-        print_day(day, tags)
+        print_day(day, tags, base_indent)
 
 
 def print_finish_message(fin_dict):
@@ -100,7 +111,7 @@ def print_finish_message(fin_dict):
         fin_time = datetime.datetime.fromtimestamp(fin_dict['datapoint'].finished['time'])
         print_datapoint(fin_dict['datapoint'])
         print(colorize(['bold', 'warning'], 'task was finished @%s on %s' % (
-        fin_time.strftime(time_format), fin_dict['datapoint'].finished['host'])))
+            fin_time.strftime(time_format), fin_dict['datapoint'].finished['host'])))
         return
     else:
         fin_time = datetime.datetime.fromtimestamp(fin_dict['datapoint'].finished['time'])
@@ -194,4 +205,3 @@ def add_task(task, finish=False):
     if folder_is_git_tracked():
         git(['add', '-A'])
         git(['commit', '-m', '"%s - %s"' % ('autocommit', task)])
-
