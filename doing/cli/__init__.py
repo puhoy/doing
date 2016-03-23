@@ -1,1 +1,1 @@
-from .cli import print_days, cmd_git, cmd_finish, add_task
+from .cli import print_days, cmd_git, cmd_finish, add_task, cmd_touch

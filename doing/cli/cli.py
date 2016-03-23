@@ -19,11 +19,11 @@ def print_datapoint(point):
     if point.__dict__.get('finished', False):
         print(
             colorize(['bold', 'okgreen'],
-                      '  ' + datetime.datetime.fromtimestamp(point.time).strftime(time_format)))
+                     '  ' + datetime.datetime.fromtimestamp(point.time).strftime(time_format)))
 
         print('  finished @%s on %s ' % (
-                     datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
-                     point.finished['host']))
+            datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
+            point.finished['host']))
 
     else:
         print(colorize('bold', '  ' + datetime.datetime.fromtimestamp(point.time).strftime(time_format)))
@@ -94,16 +94,18 @@ def print_finish_message(fin_dict):
     elif fin_dict['status'] == 'finished_before':
         fin_time = datetime.datetime.fromtimestamp(fin_dict['datapoint'].finished['time'])
         print_datapoint(fin_dict['datapoint'])
-        print(colorize(['bold', 'warning'], 'task was finished @%s on %s' % (fin_time.strftime(time_format), fin_dict['datapoint'].finished['host'])))
+        print(colorize(['bold', 'warning'], 'task was finished @%s on %s' % (
+        fin_time.strftime(time_format), fin_dict['datapoint'].finished['host'])))
         return
     else:
         fin_time = datetime.datetime.fromtimestamp(fin_dict['datapoint'].finished['time'])
-        start_time = datetime.datetime.fromtimestamp(fin_dict['datapoint']['time'])
+        start_time = datetime.datetime.fromtimestamp(fin_dict['datapoint'].time)
         print('task "%s" \nfinished @%s (took %s)' % (
-            fin_dict['datapoint']['task'],
+            fin_dict['datapoint'].task,
             fin_time.strftime(time_format),
             humanize.naturaldelta(fin_time - start_time)
         ))
+
 
 def cmd_finish(args):
     from doing.models import Day
@@ -138,18 +140,32 @@ def cmd_finish(args):
 
         fin = d.finish_task(parsed_date.timestamp())
         print_finish_message(fin)
-
-
         # todo git commit
 
 
-def add_task(task):
+def cmd_touch():
+    from doing.git import folder_is_git_tracked
+    from doing.helpers import touch
+    if touch():
+        print('merged messages')
+        if folder_is_git_tracked():
+            git(['add', '-A'])
+            git(['commit', '-m', '"%s"' % ('autocommit')])
+    else:
+        print('nothing to touch')
+    pass
+
+
+def add_task(task, finish=False):
     from doing.models import Day
     from doing.git import folder_is_git_tracked
-    day = Day('today', hostname=hostname)
+    day = Day('today')
     day.add_task(task)
     print('added')
     print_datapoint(day.datapoints[hostname][-1])
+    if finish:
+        fin = day.finish_task(day.datapoints[hostname][-1].time)
+        print_finish_message(fin)
 
     if folder_is_git_tracked():
         git(['add', '-A'])

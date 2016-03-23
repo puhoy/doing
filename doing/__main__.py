@@ -1,6 +1,6 @@
 
 import argparse
-from .cli import print_days, cmd_git, cmd_finish, add_task
+from .cli import print_days, cmd_git, cmd_finish, add_task, cmd_touch
 
 import logging
 
@@ -18,6 +18,8 @@ def main(args=None):
                         help="prints a number of days or this 'month'.")
     parser.add_argument("--tags",
                         help="restrict prints to tasks with tags", nargs='+')
+    parser.add_argument("--touch",
+                        help="try to merge messages for this host, trigger a git commit", action='store_true')
     parser.add_argument("--debug",
                         help=argparse.SUPPRESS, action='store_true')
 
@@ -34,11 +36,17 @@ def main(args=None):
     elif args.git:
         cmd_git(args.git)
 
+    elif args.task:
+        if args.finish:
+            add_task(' '.join(args.task), finish=True)
+        else:
+            add_task(' '.join(args.task))
+
     elif args.finish:
         cmd_finish(args.finish)
 
-    elif args.task:
-        add_task(' '.join(args.task))
+    elif args.touch:
+        cmd_touch()
 
     else:
         print_days('today', args.tags)

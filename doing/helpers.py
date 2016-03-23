@@ -1,3 +1,41 @@
+def process_messages():
+    """
+    looks for messages for this host & merges to the tasks
+
+    :return: true is a message was found, else false
+    """
+    import logging
+    import os
+    from . import message_folder, hostname
+    from .models import Day
+    import json
+    from dateutil import parser
+    import fnmatch
+
+    logging.debug('processing messages')
+    for f in os.listdir(message_folder):
+        date_in_filename = f.split('_')[3].split(".json")[0]
+        logging.debug('date in filename %s' % date_in_filename)
+        # if day.date() == parser.parse(date_in_filename).date():
+        # if the message is for us
+        found = False
+        if fnmatch.fnmatch(
+                os.path.join(message_folder, f),
+                os.path.join(message_folder, 'dear_%s_*.json' % hostname)):
+            logging.debug('found a message for us: %s' % f)
+            with open(os.path.join(message_folder, f)) as message_file:
+                message = json.load(message_file)
+            day = Day(parser.parse(date_in_filename).date())
+            day.merge_message_to_datapoint(message)
+            day.write()
+            found = True
+            # todo: delete message file
+        return found
+
+
+def touch():
+    return process_messages()
+
 
 def get_last_days(number_of_days):
     """
@@ -39,6 +77,7 @@ def get_uptime():
         # td = timedelta(seconds = uptime_seconds).total_seconds()
     return uptime_seconds
 
+
 def try_parse_time(to_parse):
     """
     try to convert string or int or float to a datetime
@@ -58,8 +97,3 @@ def try_parse_time(to_parse):
             return d
         except:
             return False
-
-
-
-
-

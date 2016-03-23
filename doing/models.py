@@ -92,7 +92,7 @@ class Day:
                             self.datapoints[hostname] = []
                         self.datapoints[hostname].append(Datapoint(dp_dict=point))
             logging.debug('loaded regular datapoints')
-            self._process_messages()
+
 
     def add_task(self, task, hostname=this_hostname):
         if not self.datapoints.get(hostname, False):
@@ -175,40 +175,28 @@ class Day:
         return {'status': 'ok',
                 'datapoint': dp }
 
+    def process_messages(self):
+        """
+        merges massages to datapoints
+
+        to merge messages for this host permanently, see helpers.process_messages
+        :return:
+        """
+        for f in os.listdir(message_folder):
+            if fnmatch.fnmatch(
+                os.path.join(message_folder, f),
+                os.path.join(message_folder, 'dear_*_*.json')):
+
+                logging.debug('found a message %s' % f)
+                with open(os.path.join(message_folder, f)) as message_file:
+                    message = json.load(message_file)
+                self.merge_message_to_datapoint(message)
+
     def _sort_by_time(self):
         # todo
         pass
 
-    def _process_messages(self):
-        logging.debug('processing messages')
-        for f in os.listdir(message_folder):
-            date_in_filename = f.split('_')[3].split(".json")[0]
-            logging.debug('date in filename %s' % date_in_filename)
-            if self.day.date() == parser.parse(date_in_filename).date():
-                # if the message is for us
-                if fnmatch.fnmatch(
-                        os.path.join(message_folder, f),
-                        os.path.join(message_folder, 'dear_%s_*.json' % this_hostname)):
-                    logging.debug('found a message for us: %s' % f)
-                    with open(os.path.join(message_folder, f)) as message_file:
-                        message = json.load(message_file)
-                    self._merge_message_to_datapoint(message)
-                    self.write()
-                    # todo: delete message file
-
-                elif fnmatch.fnmatch(
-                        os.path.join(message_folder, f),
-                        os.path.join(message_folder, 'dear_*_*.json')):
-
-                    logging.debug('found a message %s' % f)
-                    with open(os.path.join(message_folder, f)) as message_file:
-                        message = json.load(message_file)
-                    self._merge_message_to_datapoint(message)
-
-                self._sort_by_time()
-
-
-    def _merge_message_to_datapoint(self, message):
+    def merge_message_to_datapoint(self, message):
         """
         merge a (finish-) message in our tasks
 
