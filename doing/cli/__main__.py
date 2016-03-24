@@ -1,16 +1,17 @@
 
 import argparse
-from .cli import print_days, cmd_git, cmd_finish, add_task, cmd_touch
+from doing.cli import print_days, cmd_git, cmd_finish, add_task, cmd_touch
 
 import logging
 
 
 def main(args=None):
-    parser = argparse.ArgumentParser(description="track what youre doing. tag with + or #")
+    parser = argparse.ArgumentParser(description="keep track what you are doing.")
     parser.add_argument("task",
                         help="what i am doing", nargs='*')
+
     parser.add_argument("-f", "--finish",
-                        help="set finish time for task.\ndefaults to the 'last' task, may be time or date of task\n 'all' finishes all of today'",
+                        help="set task as finished.\ndefaults to the 'last' task, may be time or date of task\n 'all' finishes all of today'",
                         nargs='?', const='last')
     parser.add_argument("--git",
                         help="calls git with the arguments you give (runs in ~/.doing)", nargs='+')
@@ -36,17 +37,18 @@ def main(args=None):
     elif args.git:
         cmd_git(args.git)
 
+    elif args.finish:
+        print(args.finish)
+        cmd_finish(args.finish)
+
+    elif args.touch:
+        cmd_touch()
+
     elif args.task:
         if args.finish:
             add_task(' '.join(args.task), finish=True)
         else:
             add_task(' '.join(args.task))
-
-    elif args.finish:
-        cmd_finish(args.finish)
-
-    elif args.touch:
-        cmd_touch()
 
     else:
         print_days('today', args.tags)

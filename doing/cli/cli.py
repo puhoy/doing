@@ -155,12 +155,12 @@ def cmd_finish(args):
         from dateutil import parser
         try:
             parsed_date = parser.parse(args)
-        except ValueError:
-            print(colorize('warning', 'could not parse your date: %s' % args))
+        except ValueError as e:
+            print(colorize('warning', 'could not parse your date: %s (%s)' % (args, e)))
             return
         d = Day(parsed_date)
         if d.datapoints == {}:
-            print("you have got no tasks for %s" % parsed_date.date())
+            print("you have got no tasks for %s" % parsed_date.strftime(date_format + time_format))
             return
         # print(d)
 

@@ -28,11 +28,11 @@ setup(
 
 
     entry_points={
-        'console_scripts': ['doing=doing.__main__:main']
+        'console_scripts': ['doing=doing.cli.__main__:main']
     },
 
-    #description='Decentralised, minimalist microblogging service for hackers.',
-    #long_description=open('./README.md', 'r', encoding='utf-8').read(),
+    description='',
+    long_description=open('./README.md', 'r', encoding='utf-8').read(),
 
     keywords=[],
 
@@ -43,7 +43,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Operating System :: OS Independent',
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 3 - Alpha'
         'Environment :: Console',
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: End Users/Desktop',
