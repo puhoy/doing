@@ -82,6 +82,11 @@ class Day:
         self._load_datapoints()
         self.process_messages()
 
+    def get_datapoint_list(self):
+        all_points = []
+        for host in self.datapoints:
+            all_points += self.datapoints[host]
+        return sorted(all_points, key=lambda k: k.time)
 
     def _load_datapoints(self):
         self.datapoints = {}

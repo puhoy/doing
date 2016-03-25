@@ -9,6 +9,12 @@ from doing.helpers import touch
 from doing.git import folder_is_git_tracked
 from .unicode_icons import icon
 from textwrap import indent, fill, wrap, TextWrapper
+from ..helpers import _resolve_to_id, _convert_to_code
+from . import console_width
+
+
+def utf8len(s):
+    return len(s.encode('utf-8'))
 
 
 def cmd_git(args):
@@ -22,30 +28,41 @@ def cmd_git(args):
 def print_datapoint(point, base_indent=' '):
     textblock = []
     this_indent = base_indent + '  '
+    time_as_code = _convert_to_code(int(point.time))
+    time_str = datetime.datetime.fromtimestamp(point.time).strftime(time_format)
+    spaces_betw_time_and_id = (console_width - 1 - len(time_as_code) - len(time_str) - len(this_indent))
     if point.__dict__.get('finished', False):
-        iprint(
-            colorize(['bold', 'okgreen'],
-                     datetime.datetime.fromtimestamp(point.time).strftime(time_format)), base_indent)
+        iprint(icon.right_arrowhead + ' ' + time_str + '' * spaces_betw_time_and_id + '[' + time_as_code + ']', '',
+               formatting=['bold', 'okgreen'])
 
-        iprint(colorize(['bold', 'okgreen'],
-                        '%s %s on %s ' % (
-                            icon.check,
-                            datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
-                            point.finished['host'])), base_indent)
+        iprint('%s %s on %s ' % (
+            icon.check,
+            datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
+            point.finished['host']), base_indent, formatting=['bold', 'okgreen'])
     else:
-        iprint(colorize('bold', datetime.datetime.fromtimestamp(point.time).strftime(time_format)), base_indent)
+        iprint(icon.right_arrowhead + ' ' + time_str + ' ' * spaces_betw_time_and_id + '[' + time_as_code + ']', '',
+               formatting=['bold'])
 
     iprint(point.task, this_indent)
     iprint('pc was up for %s\n' % humanize.naturaldelta(point.uptime), this_indent)
 
 
-def iprint(text, ind):
+def iprint(text, ind, line_len=50, formatting=[]):
     for line in text.split('\n'):
         if line == '':
             print('')
         else:
-            for l in wrap(line, width=70):
-                print(indent(l, ind))
+            line_to_print = [ind]
+            for word in line.split(' '):
+                if len(' '.join(line_to_print)) + len(word) <= line_len:
+                    line_to_print.append(word)
+                else:
+                    print(colorize(formatting, ' '.join(line_to_print)))
+                    line_to_print = [ind]
+                    line_to_print.append(word)
+            print(colorize(formatting, ' '.join(line_to_print)))
+            # for l in wrap(line, width=console_width):
+            #    print(indent(l, ind))
 
 
 def print_day(day, tags, base_indent=' '):
@@ -56,6 +73,28 @@ def print_day(day, tags, base_indent=' '):
     if not day.datapoints:
         iprint('nothing done.\n', this_indent)
 
+    for host in day.datapoints.keys():
+        boot_time = datetime.datetime.fromtimestamp(day.datapoints[host][0].time) - datetime.timedelta(
+            seconds=day.datapoints[host][0].uptime)
+        if boot_time.date() == datetime.datetime.now().date():
+            iprint(colorize('bold', '[boot %s] %s' % (host, boot_time.strftime(time_format))), base_indent)
+        else:
+            iprint(colorize('bold', '[boot %s] %s' % (host, boot_time.strftime(date_format + ' ' + time_format))),
+                   base_indent)
+
+    for point in day.get_datapoint_list():
+        if tags:
+            tag_found = False
+            # print(point.__dict__.keys())
+            for tag in point.__dict__.get('tags', []):
+                iprint(tag, this_indent)
+                if tag in tags:
+                    tag_found = True
+            if tag_found:
+                print_datapoint(point, this_indent)
+        else:
+            print_datapoint(point, this_indent)
+    """
     for host in day.datapoints.keys():
         iprint('on %s' % host, base_indent)
         boot_time = datetime.datetime.fromtimestamp(day.datapoints[host][0].time) - datetime.timedelta(
@@ -75,6 +114,7 @@ def print_day(day, tags, base_indent=' '):
                 print_datapoint(point, this_indent)
         if day.day.date() == datetime.datetime.today().date():
             iprint(colorize('bold', '\nup for %s now.' % humanize.naturaldelta(get_uptime())), this_indent)
+    """
 
 
 def print_days(days, tags, base_indent=''):
@@ -152,12 +192,17 @@ def cmd_finish(args):
         d.finish_all()
 
     else:
-        from dateutil import parser
         try:
-            parsed_date = parser.parse(args)
-        except ValueError as e:
-            print(colorize('warning', 'could not parse your date: %s (%s)' % (args, e)))
-            return
+            timestamp = _resolve_to_id(args)
+            parsed_date = datetime.datetime.fromtimestamp(timestamp)
+        except:
+            from dateutil import parser
+            try:
+                parsed_date = parser.parse(args)
+            except ValueError as e:
+                print(colorize('warning', 'could not parse your date: %s (%s)' % (args, e)))
+                return
+
         d = Day(parsed_date)
         if d.datapoints == {}:
             print("you have got no tasks for %s" % parsed_date.strftime(date_format + time_format))

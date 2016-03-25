@@ -106,3 +106,26 @@ def try_parse_time(to_parse):
             return d
         except:
             return False
+
+ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVQXYZ0123456789"
+
+def _convert_to_code(num, alphabet=ALPHABET):
+    """
+    stolen from  http://code.activestate.com/recipes/65212/
+    """
+    b = len(alphabet)
+    return ((num == 0) and alphabet[0] ) or ( _convert_to_code(num // b, alphabet).lstrip(alphabet[0]) + alphabet[num % b])
+
+def _resolve_to_id(code, alphabet=ALPHABET):
+    '''https://github.com/jessex/shrtn/blob/master/shrtn.py'''
+    """Converts the shortened URL code back to an id number in decimal form. Use
+    the id to query the database and lookup the long URL."""
+    base = len(alphabet)
+    size = len(code)
+    id = 0
+    try:
+        for i in range(0, size): #convert from higher base back to decimal
+            id += alphabet.index(code[i]) * (base ** (size-i-1))
+    except(ValueError):
+        return False
+    return id

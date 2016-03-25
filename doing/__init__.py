@@ -8,7 +8,7 @@ message_folder = os.path.join(store_path, 'messages')
 hostname = socket.gethostname()
 
 date_format = '%Y-%m-%d'
-time_format = '%H:%M:%S'
+time_format = '%H:%M'
 
 if not os.path.isdir(store_path):
     from doing.helpers import init

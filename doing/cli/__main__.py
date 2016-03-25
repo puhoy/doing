@@ -37,9 +37,7 @@ def main(args=None):
     elif args.git:
         cmd_git(args.git)
 
-    elif args.finish:
-        print(args.finish)
-        cmd_finish(args.finish)
+
 
     elif args.touch:
         cmd_touch()
@@ -50,6 +48,9 @@ def main(args=None):
         else:
             add_task(' '.join(args.task))
 
+    elif args.finish:
+        #print(args.finish)
+        cmd_finish(args.finish)
     else:
         print_days('today', args.tags)
 
