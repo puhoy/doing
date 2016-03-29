@@ -1,4 +1,3 @@
-
 import argparse
 from doing.cli import print_days, cmd_git, cmd_finish, add_task, cmd_touch
 
@@ -49,10 +48,11 @@ def main(args=None):
             add_task(' '.join(args.task))
 
     elif args.finish:
-        #print(args.finish)
+        # print(args.finish)
         cmd_finish(args.finish)
     else:
         print_days('today', args.tags)
+
 
 if __name__ == "__main__":
     main()

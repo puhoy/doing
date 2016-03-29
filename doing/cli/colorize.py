@@ -1,5 +1,6 @@
 import logging
 
+
 def colorize(colors, text):
     """
     colorize terminal output

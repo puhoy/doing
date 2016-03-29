@@ -8,7 +8,7 @@ icons_as_dict = {
     'multiplication_x': ("\N{HEAVY MULTIPLICATION X}", 'x'),
     'ballot_x': ("\N{BALLOT X}", 'X'),
     'star': ("\N{BLACK STAR}", '*'),
-    #'' "\N{}"
+    # '' "\N{}"
 }
 
 support = False
@@ -24,6 +24,7 @@ class Icons():
     print(icon.inf + icon.*)
 
     """
+
     def __init__(self, dp_dict=None):
         self.utf_dict = dp_dict
 
@@ -32,5 +33,6 @@ class Icons():
             return icons_as_dict[name][0]
         else:
             return icons_as_dict[name][1]
+
 
 icon = Icons(icons_as_dict)

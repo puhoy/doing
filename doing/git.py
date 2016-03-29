@@ -8,6 +8,7 @@ def folder_is_git_tracked():
         return True
     return False
 
+
 def check_if_git():
     """
     checks if there is a git command

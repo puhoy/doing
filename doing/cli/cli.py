@@ -8,7 +8,6 @@ from ..git import git
 from doing.helpers import touch
 from doing.git import folder_is_git_tracked
 from .unicode_icons import icon
-from textwrap import indent, fill, wrap, TextWrapper
 from ..helpers import _resolve_to_id, _convert_to_code
 from . import console_width
 
@@ -26,7 +25,6 @@ def cmd_git(args):
 
 
 def print_datapoint(point, base_indent=' '):
-    textblock = []
     this_indent = base_indent + '  '
     time_as_code = _convert_to_code(int(point.time))
     time_str = datetime.datetime.fromtimestamp(point.time).strftime(time_format)
@@ -37,7 +35,8 @@ def print_datapoint(point, base_indent=' '):
         iprint('%s %s on %s (%s)' % (
             icon.check,
             datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
-            point.finished['host'], humanize.naturaldelta(int(point.finished['time']) - int(point.time))), base_indent, formatting=['bold', 'okgreen'])
+            point.finished['host'], humanize.naturaldelta(int(point.finished['time']) - int(point.time))), base_indent,
+               formatting=['bold', 'okgreen'])
     else:
         iprint(icon.right_arrowhead + ' ' + time_str + ' ' * spaces_betw_time_and_id + '[' + time_as_code + ']', '',
                formatting=['bold'])
@@ -93,6 +92,8 @@ def print_day(day, tags, base_indent=' '):
                 print_datapoint(point, this_indent)
         else:
             print_datapoint(point, this_indent)
+    if day.day.date() == datetime.datetime.today().date():
+        iprint(colorize('bold', '\nup for %s now.' % humanize.naturaldelta(get_uptime())), base_indent)
     """
     for host in day.datapoints.keys():
         iprint('on %s' % host, base_indent)

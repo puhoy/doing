@@ -104,7 +104,6 @@ class Day:
                         self.datapoints[hostname].append(Datapoint(dp_dict=point))
             logging.debug('loaded regular datapoints')
 
-
     def add_task(self, task, hostname=this_hostname):
         if not self.datapoints.get(hostname, False):
             self.datapoints[hostname] = []
@@ -127,11 +126,11 @@ class Day:
 
         for host in hosts:
             logging.debug('searching in points for %s' % hosts)
-            #logging.debug(self.datapoints)
+            # logging.debug(self.datapoints)
             for point in self.datapoints[host]:
                 if int(timestamp) == int(point.time):
                     return {'hostname': host,
-                            'datapoint': point }
+                            'datapoint': point}
 
     def write(self, hostname=this_hostname):
         points_to_write = []
@@ -173,7 +172,7 @@ class Day:
         if dp.__dict__.get('finished', False):
             logging.debug('was finished before')
             return {'status': 'finished_before',
-                    'datapoint': dp }
+                    'datapoint': dp}
 
         if hostname == this_hostname:
             logging.debug('yup, found. finishing.')
@@ -184,7 +183,7 @@ class Day:
             self.craft_finish_message(dp, hostname)
             pass
         return {'status': 'ok',
-                'datapoint': dp }
+                'datapoint': dp}
 
     def process_messages(self):
         """
@@ -195,12 +194,11 @@ class Day:
         """
         for f in os.listdir(message_folder):
             if fnmatch.fnmatch(
-                os.path.join(message_folder, f),
+                    os.path.join(message_folder, f),
                     os.path.join(message_folder, 'dear_*_*.json')):
                 date_in_filename = f.split('_')[3].split(".json")[0]
                 parser.parse(date_in_filename).date()
                 if self.day.date() == parser.parse(date_in_filename).date():
-
                     logging.debug('found a message %s' % f)
                     with open(os.path.join(message_folder, f)) as message_file:
                         message = json.load(message_file)
@@ -234,7 +232,6 @@ class Day:
             logging.error('got a strange message %s' % message)
             return False
 
-
     def craft_finish_message(self, datapoint, destination_host):
         """
         used to finish tasks on other hosts
@@ -243,9 +240,10 @@ class Day:
         :return:
         """
         message_path = os.path.join(
-                message_folder,
-                'dear_%s_0_%s.json' % (destination_host, datetime.datetime.fromtimestamp(datapoint.time).strftime('%Y%m%d-%H:%M:%S'))
-            )
+            message_folder,
+            'dear_%s_0_%s.json' % (
+            destination_host, datetime.datetime.fromtimestamp(datapoint.time).strftime('%Y%m%d-%H:%M:%S'))
+        )
 
         # if the name is already given, iterate a bit
         i = 0
@@ -253,7 +251,8 @@ class Day:
             i += 1
             message_path = os.path.join(
                 message_folder,
-                'dear_%s_%s_%s.json' % (destination_host, i, datetime.datetime.fromtimestamp(datapoint.time).strftime('%Y%m%d-%H:%M:%S'))
+                'dear_%s_%s_%s.json' % (
+                destination_host, i, datetime.datetime.fromtimestamp(datapoint.time).strftime('%Y%m%d-%H:%M:%S'))
             )
 
         message = {
@@ -267,7 +266,6 @@ class Day:
             json.dump(message, f, indent=2)
         self.process_messages()
         return True
-
 
 
 class Datapoint():

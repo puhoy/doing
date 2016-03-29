@@ -118,7 +118,7 @@ def _convert_to_code(num, alphabet=ALPHABET):
     """
     b = len(alphabet)
     return ((num == 0) and alphabet[0]) or (
-    _convert_to_code(num // b, alphabet).lstrip(alphabet[0]) + alphabet[num % b])
+        _convert_to_code(num // b, alphabet).lstrip(alphabet[0]) + alphabet[num % b])
 
 
 def _resolve_to_id(code, alphabet=ALPHABET):
