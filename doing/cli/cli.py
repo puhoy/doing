@@ -32,13 +32,12 @@ def print_datapoint(point, base_indent=' '):
     time_str = datetime.datetime.fromtimestamp(point.time).strftime(time_format)
     spaces_betw_time_and_id = (console_width - 1 - len(time_as_code) - len(time_str) - len(this_indent))
     if point.__dict__.get('finished', False):
-        iprint(icon.right_arrowhead + ' ' + time_str + '' * spaces_betw_time_and_id + '[' + time_as_code + ']', '',
+        iprint(icon.right_arrowhead + ' ' + time_str + ' ' * spaces_betw_time_and_id + '[' + time_as_code + ']', '',
                formatting=['bold', 'okgreen'])
-
-        iprint('%s %s on %s ' % (
+        iprint('%s %s on %s (%s)' % (
             icon.check,
             datetime.datetime.fromtimestamp(point.finished['time']).strftime(time_format),
-            point.finished['host']), base_indent, formatting=['bold', 'okgreen'])
+            point.finished['host'], humanize.naturaldelta(int(point.finished['time']) - int(point.time))), base_indent, formatting=['bold', 'okgreen'])
     else:
         iprint(icon.right_arrowhead + ' ' + time_str + ' ' * spaces_betw_time_and_id + '[' + time_as_code + ']', '',
                formatting=['bold'])
