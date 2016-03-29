@@ -10,11 +10,12 @@ def process_messages():
     from .models import Day
     import json
     from dateutil import parser
-    import time
     from datetime import datetime
     import fnmatch
 
     logging.debug('processing messages')
+    found = None
+    error = False
     for f in os.listdir(message_folder):
         date_in_filename = f.split('_')[3].split(".json")[0]
         logging.debug('date in filename %s' % date_in_filename)
@@ -36,9 +37,9 @@ def process_messages():
                     os.remove(os.path.join(message_folder, f))
                 else:
                     error = True
-        if error:
-            return False
-        return found
+    if error:
+        return False
+    return found
 
 
 def touch():
@@ -107,14 +108,18 @@ def try_parse_time(to_parse):
         except:
             return False
 
+
 ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVQXYZ0123456789"
+
 
 def _convert_to_code(num, alphabet=ALPHABET):
     """
     stolen from  http://code.activestate.com/recipes/65212/
     """
     b = len(alphabet)
-    return ((num == 0) and alphabet[0] ) or ( _convert_to_code(num // b, alphabet).lstrip(alphabet[0]) + alphabet[num % b])
+    return ((num == 0) and alphabet[0]) or (
+    _convert_to_code(num // b, alphabet).lstrip(alphabet[0]) + alphabet[num % b])
+
 
 def _resolve_to_id(code, alphabet=ALPHABET):
     '''https://github.com/jessex/shrtn/blob/master/shrtn.py'''
@@ -124,8 +129,8 @@ def _resolve_to_id(code, alphabet=ALPHABET):
     size = len(code)
     id = 0
     try:
-        for i in range(0, size): #convert from higher base back to decimal
-            id += alphabet.index(code[i]) * (base ** (size-i-1))
+        for i in range(0, size):  # convert from higher base back to decimal
+            id += alphabet.index(code[i]) * (base ** (size - i - 1))
     except(ValueError):
         return False
     return id
