@@ -104,10 +104,10 @@ class Day:
                         self.datapoints[hostname].append(Datapoint(dp_dict=point))
             logging.debug('loaded regular datapoints')
 
-    def add_task(self, task, hostname=this_hostname):
+    def add_task(self, task, hostname=this_hostname, timestamp=False):
         if not self.datapoints.get(hostname, False):
             self.datapoints[hostname] = []
-        self.datapoints[hostname].append(Datapoint(task=task))
+        self.datapoints[hostname].append(Datapoint(task=task, timestamp=timestamp))
         self.write()
 
     def get_datapoint_by_timestamp(self, timestamp, hostname=None):
@@ -269,14 +269,18 @@ class Day:
 
 
 class Datapoint():
-    def __init__(self, dp_dict=None, task=''):
+    def __init__(self, dp_dict=None, task='', timestamp=False):
         if dp_dict is None:
             dp_dict = {
-                'time': time.time(),
+                'time': int(time.time()),
+                'created': int(time.time()),
                 'tags': get_hashtags(task),
                 'task': task,
                 'uptime': get_uptime()
             }
+        if timestamp:
+            dp_dict['time'] = timestamp
+            dp_dict['uptime'] = get_uptime() - (dp_dict['created'] - dp_dict['time'])
         self.__dict__.update(dp_dict)
 
     def __repr__(self):
@@ -300,3 +304,16 @@ class Datapoint():
 
     def update(self, timestamp=datetime.datetime.now().timestamp()):
         self.updated = timestamp
+
+    @property
+    def created(self):
+        creation_timestamp = self.__dict__.get('created', False)
+
+        if not creation_timestamp:
+            creation_timestamp = self.__dict__.get('time', False)
+
+        return int(creation_timestamp)
+
+    @property
+    def time(self):
+        return int(self.__dict__.get('time', False))

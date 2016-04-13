@@ -24,10 +24,16 @@ def cmd_git(args):
     git(git_args)
 
 
+def get_timecode(datapoint):
+    return _convert_to_code(int(datapoint.created))
+
+
 def print_datapoint(point, base_indent=' '):
     this_indent = base_indent + '  '
-    time_as_code = _convert_to_code(int(point.time))
+    time_as_code = get_timecode(point)
     time_str = datetime.datetime.fromtimestamp(point.time).strftime(time_format)
+
+
     spaces_betw_time_and_id = (console_width - 1 - len(time_as_code) - len(time_str) - len(this_indent))
     if point.__dict__.get('finished', False):
         iprint(icon.right_arrowhead + ' ' + time_str + ' ' * spaces_betw_time_and_id + '[' + time_as_code + ']', '',
@@ -42,7 +48,11 @@ def print_datapoint(point, base_indent=' '):
                formatting=['bold'])
 
     iprint(point.task, this_indent)
-    iprint('pc was up for %s\n' % humanize.naturaldelta(point.uptime), this_indent)
+
+    if point.time != point.created:
+        iprint('(created @%s, pc was up for %s)\n' % (datetime.datetime.fromtimestamp(point.created).strftime(time_format), humanize.naturaldelta(point.uptime)), this_indent)
+    else:
+        iprint('pc was up for %s\n' % humanize.naturaldelta(point.uptime), this_indent)
 
 
 def iprint(text, ind, line_len=50, formatting=[]):
@@ -240,7 +250,20 @@ def add_task(task, finish=False):
             git(['commit', '-m', '"%s"' % ('autocommit after touch')])
 
     day = Day('today')
-    day.add_task(task)
+
+    if '@' in task:
+        time_str = task.split('@')[1].split()[0]
+        parsed_time = try_parse_time(time_str)
+        if not parsed_time:
+            print('can not parse %s as time or date' % time_str)
+            return
+
+        #print('creating task at time %s' % parsed_time.strftime(time_format))
+
+        day.add_task(task, timestamp=parsed_time.timestamp())
+    else:
+        day.add_task(task)
+
     print('added')
     print_datapoint(day.datapoints[hostname][-1])
     if finish:
