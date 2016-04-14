@@ -75,13 +75,28 @@ def iprint(text, ind, line_len=50, formatting=[]):
             #    print(indent(l, ind))
 
 
-def print_day(day, tags, base_indent=' '):
-    # bold, underlined date
+def print_day(day, tags, base_indent=' ', suppress_empty=False):
+    if suppress_empty:
+        if not day.datapoints:
+            return
+        if tags:
+            found = False
+            for point in day.get_datapoint_list():
+                intersection = set.intersection(set(point.__dict__.get('tags', [])), set(tags))
+                if list(intersection):
+                    found = True
+                    break
+            if not found:
+                return
+
+
     this_indent = base_indent + '  '
 
     iprint(colorize('bold', colorize('underline', '%s' % (day.day.strftime(date_format + ' (%A)')))), base_indent)
     if not day.datapoints:
-        iprint('nothing done.\n', this_indent)
+        iprint('nothing done.', this_indent)
+        print('\n')
+        return
 
     for host in day.datapoints.keys():
         boot_time = day.datapoints[host][0].time_as_dt - datetime.timedelta(
@@ -97,15 +112,19 @@ def print_day(day, tags, base_indent=' '):
             tag_found = False
             # print(point.__dict__.keys())
             for tag in point.__dict__.get('tags', []):
-                iprint(tag, this_indent)
                 if tag in tags:
                     tag_found = True
+                    print('found tag')
+                    break
             if tag_found:
                 print_datapoint(point, this_indent)
         else:
             print_datapoint(point, this_indent)
+
     if day.day.date() == datetime.datetime.today().date():
         iprint(colorize('bold', '\nup for %s now.' % humanize.naturaldelta(get_uptime())), base_indent)
+        print('\n')
+
     """
     for host in day.datapoints.keys():
         iprint('on %s' % host, base_indent)
@@ -129,15 +148,15 @@ def print_day(day, tags, base_indent=' '):
     """
 
 
-def print_days(days, tags, base_indent=''):
+def print_days(days, tags, base_indent='', suppress_empty=False):
     from doing.models import Day
     from doing.helpers import get_last_days
 
     if tags:
-        iprint('(only tasks with %s)' % tags, base_indent)
+        iprint('(only tasks with %s)\n' % tags, base_indent)
 
     days_to_print = []
-    if days.lower() in ['today', '']:
+    if days.lower() in ['today', 'now', '']:
         days_to_print = [Day('today')]
     elif days.lower() in ['month']:
         number_of_days = datetime.date.today().day
@@ -152,7 +171,11 @@ def print_days(days, tags, base_indent=''):
             iprint("unknown argument %s. --days takes 'month' or a number of days. " % days, base_indent)
 
     for day in days_to_print:
-        print_day(day, tags, base_indent)
+        if tags:
+            print_day(day, tags, base_indent=base_indent, suppress_empty=True)
+        else:
+            print_day(day, tags, base_indent=base_indent, suppress_empty=suppress_empty)
+
 
 
 def print_finish_message(fin_dict):

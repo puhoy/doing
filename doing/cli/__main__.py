@@ -20,6 +20,8 @@ def main(args=None):
                         help="restrict prints to tasks with tags", nargs='+')
     parser.add_argument("--touch",
                         help="try to merge messages for this host, trigger a git commit", action='store_true')
+    parser.add_argument("--suppress",
+                        help="suppress days without tasks while printing", action='store_true', default=False)
     parser.add_argument("--debug",
                         help=argparse.SUPPRESS, action='store_true')
 
@@ -31,7 +33,7 @@ def main(args=None):
         logging.basicConfig(level=logging.ERROR)
 
     if args.days:
-        print_days(args.days, args.tags)
+        print_days(args.days, args.tags, suppress_empty=args.suppress)
 
     elif args.git:
         cmd_git(args.git)
@@ -51,7 +53,7 @@ def main(args=None):
         # print(args.finish)
         cmd_finish(args.finish)
     else:
-        print_days('today', args.tags)
+        print_days('today', args.tags, base_indent='', suppress_empty=args.suppress)
 
 
 if __name__ == "__main__":
