@@ -82,10 +82,17 @@ class Day:
         self._load_datapoints()
         self.process_messages()
 
-    def get_datapoint_list(self):
+    def get_datapoint_list(self, tags=None):
         all_points = []
-        for host in self.datapoints:
-            all_points += self.datapoints[host]
+        if tags:
+            for host in self.datapoints:
+                for point in self.datapoints[host]:
+                    intersection = set.intersection(set(point.__dict__.get('tags', [])), set(tags))
+                    if list(intersection):
+                        all_points.append(point)
+        else:
+            for host in self.datapoints:
+                all_points += self.datapoints[host]
         return sorted(all_points, key=lambda k: k.time)
 
     def _load_datapoints(self):

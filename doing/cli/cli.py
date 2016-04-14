@@ -75,20 +75,13 @@ def iprint(text, ind, line_len=50, formatting=[]):
             #    print(indent(l, ind))
 
 
-def print_day(day, tags, base_indent=' ', suppress_empty=False):
+def print_day(day, tags=None, base_indent=' ', suppress_empty=False):
     if suppress_empty:
         if not day.datapoints:
             return
         if tags:
-            found = False
-            for point in day.get_datapoint_list():
-                intersection = set.intersection(set(point.__dict__.get('tags', [])), set(tags))
-                if list(intersection):
-                    found = True
-                    break
-            if not found:
+            if not day.get_datapoint_list(tags=tags):
                 return
-
 
     this_indent = base_indent + '  '
 
@@ -107,19 +100,14 @@ def print_day(day, tags, base_indent=' ', suppress_empty=False):
             iprint(colorize('bold', '[boot %s] %s' % (host, boot_time.strftime(date_format + ' ' + time_format))),
                    base_indent)
 
-    for point in day.get_datapoint_list():
-        if tags:
-            tag_found = False
-            # print(point.__dict__.keys())
-            for tag in point.__dict__.get('tags', []):
-                if tag in tags:
-                    tag_found = True
-                    print('found tag')
-                    break
-            if tag_found:
-                print_datapoint(point, this_indent)
-        else:
-            print_datapoint(point, this_indent)
+    for point in day.get_datapoint_list(tags=tags):
+        print_datapoint(point, this_indent)
+
+    dp_list = day.get_datapoint_list(tags=tags)
+    if len(dp_list) >= 2:
+        diff = dp_list[-1].time_as_dt - dp_list[0].time_as_dt
+        iprint(colorize('bold', '%s between first and last task.\n' % diff), base_indent)
+
 
     if day.day.date() == datetime.datetime.today().date():
         iprint(colorize('bold', '\nup for %s now.' % humanize.naturaldelta(get_uptime())), base_indent)
