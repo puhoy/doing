@@ -31,8 +31,7 @@ def get_timecode(datapoint):
 def print_datapoint(point, base_indent=' '):
     this_indent = base_indent + '  '
     time_as_code = get_timecode(point)
-    time_str = datetime.datetime.fromtimestamp(point.time).strftime(time_format)
-
+    time_str = point.time_as_dt.strftime(time_format)
 
     spaces_betw_time_and_id = (console_width - 1 - len(time_as_code) - len(time_str) - len(this_indent))
     if point.__dict__.get('finished', False):
@@ -50,7 +49,10 @@ def print_datapoint(point, base_indent=' '):
     iprint(point.task, this_indent)
 
     if point.time != point.created:
-        iprint('(created @%s, pc was up for %s)\n' % (datetime.datetime.fromtimestamp(point.created).strftime(time_format), humanize.naturaldelta(point.uptime)), this_indent)
+        if point.created_as_dt.date() == point.time_as_dt.date():
+            iprint('(created @%s)\n' % (point.created_as_dt.strftime(time_format)), this_indent)
+        else:
+            iprint('(created @%s)\n' % (point.created_as_dt.strftime(date_format + '-' + time_format)), this_indent)
     else:
         iprint('pc was up for %s\n' % humanize.naturaldelta(point.uptime), this_indent)
 
@@ -82,7 +84,7 @@ def print_day(day, tags, base_indent=' '):
         iprint('nothing done.\n', this_indent)
 
     for host in day.datapoints.keys():
-        boot_time = datetime.datetime.fromtimestamp(day.datapoints[host][0].time) - datetime.timedelta(
+        boot_time = day.datapoints[host][0].time_as_dt - datetime.timedelta(
             seconds=day.datapoints[host][0].uptime)
         if boot_time.date() == datetime.datetime.now().date():
             iprint(colorize('bold', '[boot %s] %s' % (host, boot_time.strftime(time_format))), base_indent)
@@ -257,9 +259,8 @@ def add_task(task, finish=False):
         if not parsed_time:
             print('can not parse %s as time or date' % time_str)
             return
-
         #print('creating task at time %s' % parsed_time.strftime(time_format))
-
+        day = Day(parsed_time)
         day.add_task(task, timestamp=parsed_time.timestamp())
     else:
         day.add_task(task)

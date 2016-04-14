@@ -317,3 +317,11 @@ class Datapoint():
     @property
     def time(self):
         return int(self.__dict__.get('time', False))
+
+    @property
+    def time_as_dt(self):
+        return datetime.datetime.fromtimestamp(self.time)
+
+    @property
+    def created_as_dt(self):
+        return datetime.datetime.fromtimestamp(self.created)
